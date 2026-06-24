@@ -739,17 +739,13 @@
     function toggleSelect(value) {
       if (state.selected.has(value)) state.selected.delete(value);
       else {
-        if (value === "X") state.selected = new Set(["X"]);
-        else {
-          state.selected.delete("X");
-          state.selected.add(value);
-        }
+        state.selected.add(value);
       }
       render();
     }
     function confirmAnswer() {
       const p = state.deck[state.index];
-      const selected = normalizeAnswer([...state.selected].join(""));
+      const selected = state.selected.size ? normalizeAnswer([...state.selected].join("")) : "X";
       const ok = selected === p.displayAnswer;
       if (ok) state.correct += 1;
       else {
@@ -951,7 +947,8 @@
       if (!p) return finishRun(false);
       app.className = "app play-shell";
       const pct = Math.round((state.index / state.deck.length) * 100);
-      const answerKeys = ["1","2","3","4","5","6","7","8","9","中","X"];
+      const answerKeys = ["1","2","3","4","5","6","7","8","9"];
+      if (p.displayHand.includes("中")) answerKeys.push("中");
       app.innerHTML = `
         <div class="topline">
           <div class="progress-text">${state.index + 1}/${state.deck.length}</div>
@@ -965,7 +962,7 @@
             <div class="judge ${state.judge ? "show " + state.judge : ""}">${state.judge === "ok" ? "○" : state.judge === "ng" ? "×" : ""}</div>
             <div>
               <div class="keys">
-                ${answerKeys.map(k => `<button class="key ${state.selected.has(k) ? "selected" : ""} ${k === "X" || k === "中" ? "wide" : ""}" data-key="${k}">${k === "X" ? "なし" : k}</button>`).join("")}
+                ${answerKeys.map(k => `<button class="key ${state.selected.has(k) ? "selected" : ""} ${k === "中" ? "wide" : ""}" data-key="${k}">${k}</button>`).join("")}
               </div>
               <button class="btn btn-primary confirm" data-confirm>確定</button>
             </div>
@@ -1032,7 +1029,6 @@
       if (state.screen === "play") {
         if (/^[1-9]$/.test(e.key)) toggleSelect(e.key);
         if (e.key === "Enter") confirmAnswer();
-        if (e.key.toLowerCase() === "x") toggleSelect("X");
       } else if (state.screen === "result" && e.key === "Enter") {
         startRun(state.result.total);
       }
