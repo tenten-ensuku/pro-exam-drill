@@ -773,7 +773,7 @@
       state.timerId = setInterval(() => {
         state.elapsed = (performance.now() - state.startedAt) / 1000;
         if (state.deck.length === 50 && state.elapsed >= EXAM_LIMIT_SECONDS) finishRun(true);
-        else render();
+        else updatePlayClock();
       }, 250);
       preloadTiles(selected[0]);
       preloadTiles(selected[1]);
@@ -786,12 +786,24 @@
         img.src = tileSrc(ch);
       });
     }
+    function updatePlayClock() {
+      if (state.screen !== "play") return;
+      const timer = document.getElementById("playTimer");
+      if (!timer) return;
+      timer.firstChild.nodeValue = formatTime(state.elapsed);
+    }
+    function updateKeySelection() {
+      if (state.screen !== "play") return;
+      document.querySelectorAll("[data-key]").forEach(btn => {
+        btn.classList.toggle("selected", state.selected.has(btn.dataset.key));
+      });
+    }
     function toggleSelect(value) {
       if (state.selected.has(value)) state.selected.delete(value);
       else {
         state.selected.add(value);
       }
-      render();
+      updateKeySelection();
     }
     function confirmAnswer() {
       const p = state.deck[state.index];
@@ -1085,7 +1097,7 @@
       app.innerHTML = `
         <div class="topline">
           <div class="progress-text">${state.index + 1}/${state.deck.length}</div>
-          <div class="timer">${formatTime(state.elapsed)}${state.deck.length === 50 ? `<span class="limit">制限 ${formatTime(EXAM_LIMIT_SECONDS)}</span>` : ""}</div>
+          <div class="timer" id="playTimer">${formatTime(state.elapsed)}${state.deck.length === 50 ? `<span class="limit">制限 ${formatTime(EXAM_LIMIT_SECONDS)}</span>` : ""}</div>
           <div class="bar"><span style="width:${pct}%"></span></div>
         </div>
         <section class="panel question">
