@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>プロ試験対策ドリル ver1</title>
+  <title>プロ試験対策ドリル ver2</title>
   <meta name="description" content="13枚形の索子清一色対策ドリル。" />
   <link rel="icon" href="data:," />
   <style>
@@ -273,6 +273,26 @@
     .judge.show { opacity: 1; transform: scale(1); }
     .judge.ok { color: var(--red); }
     .judge.ng { color: var(--blue); }
+    .answer-review {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(242,210,123,0.24);
+      background: rgba(0,0,0,0.24);
+    }
+    .answer-review strong {
+      display: block;
+      margin-bottom: 5px;
+      color: #ffe27b;
+      font-size: 16px;
+      font-weight: 900;
+    }
+    .answer-review p {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1.5;
+    }
     .keys {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -448,7 +468,7 @@
 <body>
   <main class="app" id="app"></main>
   <script>
-    const APP_VERSION = 1;
+    const APP_VERSION = 2;
     const APP_TITLE = "プロ試験対策ドリル";
     const EXAM_LIMIT_SECONDS = 25 * 60;
     const STORAGE = {
@@ -635,11 +655,17 @@
       selected: new Set(),
       startedAt: 0,
       elapsed: 0,
+      pausedMs: 0,
+      pauseStartedAt: 0,
       timerId: null,
+      runMode: "challenge",
       correct: 0,
       misses: 0,
       wrongs: [],
       judge: null,
+      answerReview: null,
+      touchDragKey: null,
+      suppressClickKey: null,
       result: null,
       search: "",
       listSort: "normal"
@@ -652,7 +678,7 @@
       localStorage.setItem(key, JSON.stringify(value));
     }
     function settings() {
-      return { sound: 1, ...loadJson(STORAGE.settings, {}) };
+      return { sound: 1, slideTouch: 1, ...loadJson(STORAGE.settings, {}) };
     }
     function favorites() {
       return loadJson(STORAGE.favorites, []);
@@ -754,7 +780,7 @@
         osc.stop(ctx.currentTime + 0.14);
       } catch {}
     }
-    function startRun(count, sourceIds = null) {
+    function startRun(count, sourceIds = null, mode = "challenge") {
       const source = sourceIds ? sourceIds.map(problemById).filter(Boolean) : PROBLEMS;
       const selected = shuffle(source).slice(0, Math.min(count, source.length)).map(materialize);
       state.screen = "play";
@@ -763,22 +789,32 @@
       state.selected = new Set();
       state.startedAt = performance.now();
       state.elapsed = 0;
+      state.pausedMs = 0;
+      state.pauseStartedAt = 0;
+      state.runMode = mode;
       state.correct = 0;
       state.misses = 0;
       state.wrongs = [];
       state.judge = null;
+      state.answerReview = null;
+      state.touchDragKey = null;
+      state.suppressClickKey = null;
       state.result = null;
       document.body.classList.add("playing");
       window.scrollTo(0, 0);
       clearInterval(state.timerId);
       state.timerId = setInterval(() => {
-        state.elapsed = (performance.now() - state.startedAt) / 1000;
+        if (!state.pauseStartedAt) state.elapsed = currentElapsed();
         if (state.deck.length === 50 && state.elapsed >= EXAM_LIMIT_SECONDS) finishRun(true);
         else updatePlayClock();
       }, 250);
       preloadTiles(selected[0]);
       preloadTiles(selected[1]);
       render();
+    }
+    function currentElapsed() {
+      const paused = state.pauseStartedAt ? performance.now() - state.pauseStartedAt : 0;
+      return Math.max(0, (performance.now() - state.startedAt - state.pausedMs - paused) / 1000);
     }
     function preloadTiles(problem) {
       if (!problem) return;
@@ -800,6 +836,7 @@
       });
     }
     function toggleSelect(value) {
+      if (state.answerReview) return;
       if (state.selected.has(value)) state.selected.delete(value);
       else {
         state.selected.add(value);
@@ -807,6 +844,7 @@
       updateKeySelection();
     }
     function confirmAnswer() {
+      if (state.answerReview) return;
       const p = state.deck[state.index];
       const selected = state.selected.size ? normalizeAnswer([...state.selected].join("")) : "X";
       const ok = selected === p.displayAnswer;
@@ -819,25 +857,43 @@
       }
       playBeep(ok);
       state.judge = ok ? "ok" : "ng";
+      if (!ok && state.runMode === "practice") {
+        state.pauseStartedAt = performance.now();
+        state.answerReview = { selected, answer: p.displayAnswer };
+        render();
+        return;
+      }
       render();
       setTimeout(() => {
-        state.index += 1;
-        state.selected = new Set();
-        state.judge = null;
-        preloadTiles(state.deck[state.index + 1]);
-        if (state.index >= state.deck.length) finishRun(false);
-        else render();
+        advanceProblem();
       }, 260);
+    }
+    function advanceProblem() {
+      if (state.pauseStartedAt) {
+        state.pausedMs += performance.now() - state.pauseStartedAt;
+        state.pauseStartedAt = 0;
+      }
+      state.index += 1;
+      state.selected = new Set();
+      state.judge = null;
+      state.answerReview = null;
+      state.touchDragKey = null;
+      state.suppressClickKey = null;
+      state.elapsed = currentElapsed();
+      preloadTiles(state.deck[state.index + 1]);
+      if (state.index >= state.deck.length) finishRun(false);
+      else render();
     }
     function finishRun(timeout) {
       clearInterval(state.timerId);
-      state.elapsed = Math.min((performance.now() - state.startedAt) / 1000, EXAM_LIMIT_SECONDS);
+      state.elapsed = Math.min(currentElapsed(), EXAM_LIMIT_SECONDS);
       state.result = {
         total: state.deck.length,
         correct: state.correct,
         misses: state.misses,
         elapsed: state.elapsed,
         timeout,
+        runMode: state.runMode,
         wrongs: [...state.wrongs]
       };
       recordResult(state.result);
@@ -910,6 +966,17 @@
             <button class="btn btn-primary" data-start="50">開始</button>
           </div>
         </div>
+        <div class="section-title" style="margin-top:18px"><h2>練習</h2><span class="meta">誤答時に正解表示</span></div>
+        <div class="mode-grid">
+          <div class="mode-card">
+            <div><h2>10問</h2><small>正解表示中は計測停止。</small></div>
+            <button class="btn btn-brown" data-practice-start="10">練習</button>
+          </div>
+          <div class="mode-card">
+            <div><h2>50問</h2><small>本番前の通し練習用。</small></div>
+            <button class="btn btn-brown" data-practice-start="50">練習</button>
+          </div>
+        </div>
       `;
       if (state.tab === "review") return `
         <div class="section-title"><h2>復習</h2></div>
@@ -940,6 +1007,13 @@
             <p class="meta">正誤判定の音を鳴らします。</p>
           </div>
           <button class="btn ${settings().sound ? "btn-primary" : ""}" data-sound>${settings().sound ? "ON" : "OFF"}</button>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div>
+            <strong>スライドタッチ</strong>
+            <p class="meta">指を押したまま別の数字へ移動しても選択できます。</p>
+          </div>
+          <button class="btn ${settings().slideTouch ? "btn-primary" : ""}" data-slide-touch>${settings().slideTouch ? "ON" : "OFF"}</button>
         </div>
       `;
     }
@@ -1050,6 +1124,7 @@
     }
     function bindMenuEvents() {
       app.querySelectorAll("[data-start]").forEach(btn => btn.addEventListener("click", () => startRun(Number(btn.dataset.start))));
+      app.querySelectorAll("[data-practice-start]").forEach(btn => btn.addEventListener("click", () => startRun(Number(btn.dataset.practiceStart), null, "practice")));
       app.querySelectorAll("[data-fav]").forEach(btn => btn.addEventListener("click", () => toggleFavorite(Number(btn.dataset.fav))));
       app.querySelectorAll("[data-remove-wrong]").forEach(btn => btn.addEventListener("click", () => removeWrong(Number(btn.dataset.removeWrong))));
       app.querySelectorAll("[data-review-kind]").forEach(btn => btn.addEventListener("click", () => {
@@ -1071,6 +1146,12 @@
       const sound = app.querySelector("[data-sound]");
       if (sound) sound.addEventListener("click", () => {
         const next = { ...settings(), sound: settings().sound ? 0 : 1 };
+        saveJson(STORAGE.settings, next);
+        render();
+      });
+      const slideTouch = app.querySelector("[data-slide-touch]");
+      if (slideTouch) slideTouch.addEventListener("click", () => {
+        const next = { ...settings(), slideTouch: settings().slideTouch ? 0 : 1 };
         saveJson(STORAGE.settings, next);
         render();
       });
@@ -1111,6 +1192,13 @@
                 ${answerKeys.map(k => `<button class="key ${state.selected.has(k) ? "selected" : ""} ${k === "中" ? "wide" : ""}" data-key="${k}">${k}</button>`).join("")}
               </div>
               <button class="btn btn-primary confirm" data-confirm>確定</button>
+              ${state.answerReview ? `
+                <div class="answer-review">
+                  <strong>正解 ${labelAnswer(state.answerReview.answer)}</strong>
+                  <p>選択 ${labelAnswer(state.answerReview.selected || "X")} / 計測停止中</p>
+                  <button class="btn btn-primary" style="width:100%;margin-top:10px" data-next-practice>次へ</button>
+                </div>
+              ` : ""}
             </div>
           </div>
         </section>
@@ -1119,10 +1207,32 @@
           <button class="btn" data-retry>再挑戦</button>
         </div>
       `;
-      app.querySelectorAll("[data-key]").forEach(btn => btn.addEventListener("click", () => toggleSelect(btn.dataset.key)));
+      app.querySelectorAll("[data-key]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          if (state.suppressClickKey === btn.dataset.key) {
+            state.suppressClickKey = null;
+            return;
+          }
+          toggleSelect(btn.dataset.key);
+        });
+        btn.addEventListener("pointerdown", () => {
+          state.touchDragKey = btn.dataset.key;
+          if (settings().slideTouch) {
+            state.suppressClickKey = btn.dataset.key;
+            toggleSelect(btn.dataset.key);
+          }
+        });
+        btn.addEventListener("pointerenter", event => {
+          if (!settings().slideTouch || event.buttons !== 1 || state.touchDragKey === btn.dataset.key) return;
+          state.touchDragKey = btn.dataset.key;
+          toggleSelect(btn.dataset.key);
+        });
+      });
       app.querySelector("[data-confirm]").addEventListener("click", confirmAnswer);
+      const next = app.querySelector("[data-next-practice]");
+      if (next) next.addEventListener("click", advanceProblem);
       app.querySelector("[data-menu]").addEventListener("click", endToMenu);
-      app.querySelector("[data-retry]").addEventListener("click", () => startRun(state.deck.length));
+      app.querySelector("[data-retry]").addEventListener("click", () => startRun(state.deck.length, null, state.runMode));
     }
     function renderResult() {
       const r = state.result;
@@ -1160,7 +1270,7 @@
         </section>
       `;
       app.querySelectorAll("[data-menu]").forEach(btn => btn.addEventListener("click", endToMenu));
-      app.querySelector("[data-retry-result]").addEventListener("click", () => startRun(r.total));
+      app.querySelector("[data-retry-result]").addEventListener("click", () => startRun(r.total, null, r.runMode || "challenge"));
       app.querySelectorAll("[data-fav]").forEach(btn => btn.addEventListener("click", () => toggleFavorite(Number(btn.dataset.fav))));
     }
     function escapeHtml(text) {
@@ -1173,6 +1283,10 @@
     }
     window.addEventListener("keydown", e => {
       if (state.screen === "play") {
+        if (state.answerReview && e.key === "Enter") {
+          advanceProblem();
+          return;
+        }
         if (/^[1-9]$/.test(e.key)) toggleSelect(e.key);
         if (e.key === "Enter") confirmAnswer();
       } else if (state.screen === "result" && e.key === "Enter") {
