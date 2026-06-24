@@ -106,7 +106,7 @@
     .card { padding: 18px; }
     .tabs {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 7px;
       margin: 6px 0 14px;
     }
@@ -116,7 +116,7 @@
       color: var(--cream);
       background: rgba(248,243,223,0.06);
       border: 1px solid rgba(248,243,223,0.13);
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 900;
       white-space: nowrap;
     }
@@ -399,6 +399,25 @@
       font-weight: 900;
       line-height: 1.6;
     }
+    .sort-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 10px 0 12px;
+    }
+    .meter {
+      height: 8px;
+      margin-top: 7px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(248,243,223,0.08);
+    }
+    .meter span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #e05248, #f0d37a, #25b889);
+    }
     .search {
       width: 100%;
       height: 44px;
@@ -422,6 +441,7 @@
       .answer-wrap { grid-template-columns: 54px 1fr; }
       .key { height: 50px; }
       .summary { grid-template-columns: repeat(2, 1fr); }
+      .tab { font-size: 11px; }
     }
   </style>
 </head>
@@ -433,7 +453,9 @@
     const STORAGE = {
       favorites: "pro_exam_drill_favorites_v1",
       wrongs: "pro_exam_drill_wrongs_v1",
-      settings: "pro_exam_drill_settings_v1"
+      settings: "pro_exam_drill_settings_v1",
+      problemStats: "pro_exam_drill_problem_stats_v1",
+      results: "pro_exam_drill_results_v1"
     };
     const PROBLEMS = [
       {id:1, hand:"2233334445566", answer:"12457", status:"確認済み"},
@@ -618,7 +640,8 @@
       wrongs: [],
       judge: null,
       result: null,
-      search: ""
+      search: "",
+      listSort: "normal"
     };
 
     function loadJson(key, fallback) {
@@ -636,11 +659,38 @@
     function wrongStore() {
       return loadJson(STORAGE.wrongs, []);
     }
+    function problemStats() {
+      return loadJson(STORAGE.problemStats, {});
+    }
+    function resultHistory() {
+      return loadJson(STORAGE.results, []);
+    }
     function setFavorites(ids) {
       saveJson(STORAGE.favorites, [...new Set(ids)].slice(0, 300));
     }
     function setWrongs(ids) {
       saveJson(STORAGE.wrongs, [...new Set(ids)].slice(0, 300));
+    }
+    function recordProblemStat(id, ok) {
+      const stats = problemStats();
+      const key = String(id);
+      const row = stats[key] || { attempts: 0, correct: 0 };
+      row.attempts += 1;
+      if (ok) row.correct += 1;
+      stats[key] = row;
+      saveJson(STORAGE.problemStats, stats);
+    }
+    function recordResult(result) {
+      const history = resultHistory();
+      history.unshift({
+        total: result.total,
+        correct: result.correct,
+        misses: result.misses,
+        elapsed: Math.round(result.elapsed * 10) / 10,
+        timeout: !!result.timeout,
+        at: new Date().toISOString()
+      });
+      saveJson(STORAGE.results, history.slice(0, 300));
     }
     function problemById(id) {
       return PROBLEMS.find(p => p.id === Number(id));
@@ -747,6 +797,7 @@
       const p = state.deck[state.index];
       const selected = state.selected.size ? normalizeAnswer([...state.selected].join("")) : "X";
       const ok = selected === p.displayAnswer;
+      recordProblemStat(p.id, ok);
       if (ok) state.correct += 1;
       else {
         state.misses += 1;
@@ -776,6 +827,7 @@
         timeout,
         wrongs: [...state.wrongs]
       };
+      recordResult(state.result);
       state.screen = "result";
       document.body.classList.remove("playing");
       render();
@@ -805,6 +857,7 @@
         ["challenge", "挑戦"],
         ["review", "復習"],
         ["list", "問題一覧"],
+        ["analysis", "自己分析"],
         ["settings", "設定"]
       ];
       return `<div class="tabs">${tabs.map(([key, label]) => `<button class="tab ${state.tab === key ? "active" : ""}" data-tab="${key}">${label}</button>`).join("")}</div>`;
@@ -856,11 +909,16 @@
       if (state.tab === "list") return `
         <div class="section-title"><h2>問題一覧</h2><span class="meta">${PROBLEMS.length}問</span></div>
         <input class="search" id="search" value="${escapeHtml(state.search)}" placeholder="番号・牌姿・待ちで検索">
-        <div class="list">${renderProblemRows(PROBLEMS.filter(p => {
+        <div class="sort-tabs">
+          <button class="tab ${state.listSort === "normal" ? "active" : ""}" data-sort="normal">通常順</button>
+          <button class="tab ${state.listSort === "weak" ? "active" : ""}" data-sort="weak">苦手順</button>
+        </div>
+        <div class="list">${renderProblemRows(sortedProblems().filter(p => {
           const q = state.search.trim();
           return !q || String(p.id).includes(q) || p.hand.includes(q) || p.answer.includes(q);
         }))}</div>
       `;
+      if (state.tab === "analysis") return renderAnalysis();
       return `
         <div class="section-title"><h2>設定</h2></div>
         <div class="row">
@@ -893,11 +951,13 @@
     }
     function renderProblemRows(items, mode = "list") {
       const favs = favorites();
+      const stats = problemStats();
       return items.map(p => `
         <div class="row">
           <div>
             ${renderTiles(p.hand, true)}
             <div class="meta">No.${p.id} / 正解 ${labelAnswer(normalizeAnswer(p.answer))}${p.status !== "確認済み" ? ` / ${p.status}` : ""}</div>
+            ${renderAccuracy(stats[p.id])}
           </div>
           <div style="display:grid;gap:6px">
             <button class="star ${favs.includes(p.id) ? "on" : ""}" data-fav="${p.id}">${favs.includes(p.id) ? "★済" : "☆追加"}</button>
@@ -905,6 +965,75 @@
           </div>
         </div>
       `).join("") || `<p class="empty">該当する問題はありません。</p>`;
+    }
+    function renderAccuracy(row) {
+      if (!row || !row.attempts) return `<div class="meta">正答率 未挑戦</div>`;
+      const pct = Math.round((row.correct / row.attempts) * 100);
+      return `<div class="meta">正答率 ${pct}%（${row.correct}/${row.attempts}）<div class="meter"><span style="width:${pct}%"></span></div></div>`;
+    }
+    function sortedProblems() {
+      if (state.listSort !== "weak") return PROBLEMS;
+      const stats = problemStats();
+      return [...PROBLEMS].sort((a, b) => {
+        const sa = stats[a.id] || { attempts: 0, correct: 0 };
+        const sb = stats[b.id] || { attempts: 0, correct: 0 };
+        if (!sa.attempts && !sb.attempts) return a.id - b.id;
+        if (!sa.attempts) return 1;
+        if (!sb.attempts) return -1;
+        const ra = sa.correct / sa.attempts;
+        const rb = sb.correct / sb.attempts;
+        if (ra !== rb) return ra - rb;
+        if (sa.attempts !== sb.attempts) return sb.attempts - sa.attempts;
+        return a.id - b.id;
+      });
+    }
+    function renderAnalysis() {
+      const stats = problemStats();
+      const history = resultHistory();
+      const totals = Object.values(stats).reduce((acc, row) => {
+        acc.attempts += row.attempts || 0;
+        acc.correct += row.correct || 0;
+        return acc;
+      }, { attempts: 0, correct: 0 });
+      const accuracy = totals.attempts ? Math.round((totals.correct / totals.attempts) * 100) : 0;
+      const completed = history.filter(r => !r.timeout);
+      const best50 = bestResult(history.filter(r => r.total === 50));
+      const best10 = bestResult(history.filter(r => r.total === 10));
+      const avgSec = history.length ? (history.reduce((sum, r) => sum + (r.elapsed || 0), 0) / history.reduce((sum, r) => sum + (r.total || 1), 0)).toFixed(1) : "-";
+      return `
+        <div class="section-title"><h2>自己分析</h2><span class="meta">ローカル保存</span></div>
+        <div class="summary">
+          <div class="stat"><small>挑戦回数</small><strong>${history.length}</strong></div>
+          <div class="stat"><small>完走</small><strong>${completed.length}</strong></div>
+          <div class="stat"><small>正答率</small><strong>${totals.attempts ? accuracy + "%" : "-"}</strong></div>
+          <div class="stat"><small>平均秒/問</small><strong>${avgSec}${avgSec === "-" ? "" : "秒"}</strong></div>
+        </div>
+        <div class="list">
+          <div class="row"><div><strong>10問ベスト</strong><div class="meta">${best10 ? `${best10.correct}/${best10.total}・${formatTime(best10.elapsed)}・${(best10.elapsed / best10.total).toFixed(1)}秒/問` : "記録なし"}</div></div></div>
+          <div class="row"><div><strong>50問ベスト</strong><div class="meta">${best50 ? `${best50.correct}/${best50.total}・${formatTime(best50.elapsed)}・${(best50.elapsed / best50.total).toFixed(1)}秒/問` : "記録なし"}</div></div></div>
+        </div>
+        <div class="section-title" style="margin-top:18px"><h2>苦手な問題</h2><span class="meta">正答率順</span></div>
+        <div class="list">${renderProblemRows(sortedWeakProblems().slice(0, 10), "analysis")}</div>
+      `;
+    }
+    function bestResult(items) {
+      return [...items].sort((a, b) => {
+        if (b.correct !== a.correct) return b.correct - a.correct;
+        return a.elapsed - b.elapsed;
+      })[0] || null;
+    }
+    function sortedWeakProblems() {
+      const stats = problemStats();
+      return [...PROBLEMS]
+        .filter(p => stats[p.id]?.attempts)
+        .sort((a, b) => {
+          const sa = stats[a.id];
+          const sb = stats[b.id];
+          const ra = sa.correct / sa.attempts;
+          const rb = sb.correct / sb.attempts;
+          if (ra !== rb) return ra - rb;
+          return sb.attempts - sa.attempts;
+        });
     }
     function bindMenuEvents() {
       app.querySelectorAll("[data-start]").forEach(btn => btn.addEventListener("click", () => startRun(Number(btn.dataset.start))));
@@ -922,6 +1051,10 @@
         next.focus();
         next.setSelectionRange(next.value.length, next.value.length);
       });
+      app.querySelectorAll("[data-sort]").forEach(btn => btn.addEventListener("click", () => {
+        state.listSort = btn.dataset.sort;
+        render();
+      }));
       const sound = app.querySelector("[data-sound]");
       if (sound) sound.addEventListener("click", () => {
         const next = { ...settings(), sound: settings().sound ? 0 : 1 };
