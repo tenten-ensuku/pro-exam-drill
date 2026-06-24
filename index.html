@@ -1,0 +1,1046 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>プロ試験対策ドリル</title>
+  <meta name="description" content="13枚形の索子清一色対策ドリル。" />
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      color-scheme: dark;
+      --felt-0: #06110f;
+      --felt-1: #0b2f28;
+      --felt-2: #0f493c;
+      --cream: #f8f3df;
+      --muted: #aeb9b4;
+      --gold: #e6b247;
+      --orange: #f08a24;
+      --brown: #4b3021;
+      --red: #e2473d;
+      --blue: #4ca6ff;
+      --line: rgba(248, 243, 223, 0.14);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+      overscroll-behavior-x: none;
+      touch-action: pan-y;
+    }
+    body {
+      font-family: "Yu Mincho", "YuMincho", "Hiragino Mincho ProN", "MS PMincho", serif;
+      color: var(--cream);
+      background:
+        radial-gradient(circle at 50% -8%, rgba(242, 210, 123, 0.15), transparent 34rem),
+        linear-gradient(135deg, var(--felt-1), var(--felt-2) 48%, var(--felt-0));
+      letter-spacing: 0;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.024) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+      background-size: 18px 18px;
+      opacity: 0.85;
+    }
+    body.playing {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+    }
+    button {
+      font: inherit;
+      border: 0;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .app {
+      position: relative;
+      width: min(100%, 440px);
+      min-height: 100dvh;
+      margin: 0 auto;
+      padding: 16px 12px max(18px, env(safe-area-inset-bottom));
+    }
+    .play-shell {
+      height: 100dvh;
+      overflow: hidden;
+      padding-bottom: 8px;
+    }
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 6px 4px 12px;
+    }
+    h1, h2, h3, p { margin: 0; }
+    h1 {
+      font-size: 29px;
+      line-height: 1.08;
+      font-weight: 900;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.58), 0 0 16px rgba(242,210,123,0.18);
+    }
+    .sub {
+      margin-top: 8px;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .panel {
+      border: 1px solid rgba(242, 210, 123, 0.2);
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(7,16,14,0.94), rgba(12,23,21,0.94));
+      box-shadow: 0 24px 60px rgba(0,0,0,0.34);
+    }
+    .card { padding: 18px; }
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      margin: 6px 0 14px;
+    }
+    .tab {
+      min-height: 40px;
+      border-radius: 999px;
+      color: var(--cream);
+      background: rgba(248,243,223,0.06);
+      border: 1px solid rgba(248,243,223,0.13);
+      font-size: 13px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .tab.active {
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255,241,198,0.42), transparent 72%),
+        linear-gradient(180deg, #a06f46, #4b3021 50%, #15100d);
+      border-color: rgba(255,225,154,0.58);
+      color: #fff6db;
+    }
+    .mode-grid {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .mode-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 18px;
+      border-radius: 22px;
+      border: 1px solid rgba(242,210,123,0.18);
+      background: rgba(0,0,0,0.2);
+    }
+    .mode-card h2 {
+      font-size: 25px;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+    .mode-card small {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .btn {
+      min-height: 48px;
+      padding: 0 18px;
+      border-radius: 16px;
+      color: var(--cream);
+      font-weight: 900;
+      border: 1px solid rgba(248,243,223,0.14);
+      background: rgba(248,243,223,0.07);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.13), 0 10px 22px rgba(0,0,0,0.24);
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary {
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255,255,255,0.36), transparent 64%),
+        linear-gradient(180deg, #ffcf6a, #f08a24 42%, #632308);
+      color: #1e1004;
+      border-color: rgba(255,225,154,0.58);
+    }
+    .btn-brown {
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255,241,198,0.42), transparent 72%),
+        linear-gradient(180deg, #a06f46, #4b3021 50%, #15100d);
+      color: #fff6db;
+      border-color: rgba(185,139,85,0.68);
+    }
+    .btn-danger {
+      background: linear-gradient(180deg, #e05248, #9f211d);
+      color: #fff7ed;
+    }
+    .topline {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: 12px;
+      padding: 0 4px 10px;
+    }
+    .progress-text {
+      font-size: 18px;
+      font-weight: 900;
+      color: #ffe27b;
+    }
+    .timer {
+      text-align: right;
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .limit {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .bar {
+      grid-column: 1 / -1;
+      height: 6px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.32);
+    }
+    .bar span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #ffe27b, #f08a24);
+      transition: width 180ms ease;
+    }
+    .question {
+      padding: 15px 12px 12px;
+      border-radius: 22px;
+    }
+    .question-title {
+      margin: 2px 6px 12px;
+      font-size: 20px;
+      font-weight: 900;
+    }
+    .tiles {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      width: 100%;
+      min-height: 78px;
+      padding: 5px 2px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.16);
+      overflow: hidden;
+    }
+    .tile {
+      width: min(30px, calc((100vw - 52px) / 13));
+      aspect-ratio: 66 / 90;
+      flex: 0 1 auto;
+      object-fit: contain;
+      image-rendering: auto;
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,0.32));
+    }
+    .answer-wrap {
+      display: grid;
+      grid-template-columns: 1fr minmax(220px, 278px);
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .judge {
+      display: grid;
+      place-items: center;
+      height: 70px;
+      font-size: 64px;
+      font-weight: 900;
+      line-height: 1;
+      opacity: 0;
+      transform: scale(0.86);
+      transition: opacity 140ms ease, transform 140ms ease;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.55);
+    }
+    .judge.show { opacity: 1; transform: scale(1); }
+    .judge.ok { color: var(--red); }
+    .judge.ng { color: var(--blue); }
+    .keys {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(248,243,223,0.18);
+    }
+    .key {
+      height: 54px;
+      font-size: 24px;
+      font-weight: 900;
+      color: #17120a;
+      background: #f7efd8;
+      border-right: 1px solid rgba(0,0,0,0.13);
+      border-bottom: 1px solid rgba(0,0,0,0.13);
+    }
+    .key:nth-child(3n) { border-right: 0; }
+    .key.selected {
+      color: #fff6df;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255,255,255,0.28), transparent 66%),
+        linear-gradient(180deg, #b88636, #5c351c);
+    }
+    .key.wide {
+      grid-column: span 3;
+      height: 46px;
+      font-size: 18px;
+    }
+    .confirm {
+      width: 100%;
+      min-height: 56px;
+      margin-top: 8px;
+      border-radius: 18px;
+      font-size: 19px;
+    }
+    .play-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.18);
+      border: 1px solid rgba(248,243,223,0.08);
+    }
+    .mini-tiles {
+      display: flex;
+      gap: 0;
+      overflow: hidden;
+    }
+    .mini-tiles .tile { width: min(21px, calc((100vw - 132px) / 13)); }
+    .meta {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.4;
+    }
+    .star {
+      min-width: 68px;
+      height: 38px;
+      border-radius: 999px;
+      background: rgba(248,243,223,0.08);
+      color: #ffe27b;
+      border: 1px solid rgba(248,243,223,0.12);
+      font-weight: 900;
+    }
+    .star.on {
+      color: #463413;
+      background: #ffe27b;
+    }
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .section-title h2 {
+      font-size: 24px;
+      font-weight: 900;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin: 14px 0;
+    }
+    .stat {
+      padding: 12px 6px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.18);
+      text-align: center;
+      border: 1px solid rgba(248,243,223,0.08);
+    }
+    .stat small {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .stat strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 18px;
+      font-weight: 900;
+    }
+    .empty {
+      padding: 22px 10px;
+      color: var(--muted);
+      text-align: center;
+      font-weight: 900;
+      line-height: 1.6;
+    }
+    .search {
+      width: 100%;
+      height: 44px;
+      padding: 0 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(248,243,223,0.14);
+      background: rgba(0,0,0,0.2);
+      color: var(--cream);
+      font: inherit;
+      font-weight: 900;
+      outline: none;
+    }
+    .result-title {
+      font-size: 34px;
+      font-weight: 900;
+      line-height: 1;
+    }
+    @media (max-width: 374px) {
+      .app { padding-left: 8px; padding-right: 8px; }
+      h1 { font-size: 25px; }
+      .answer-wrap { grid-template-columns: 54px 1fr; }
+      .key { height: 50px; }
+      .summary { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" id="app"></main>
+  <script>
+    const APP_TITLE = "プロ試験対策ドリル";
+    const EXAM_LIMIT_SECONDS = 25 * 60;
+    const STORAGE = {
+      favorites: "pro_exam_drill_favorites_v1",
+      wrongs: "pro_exam_drill_wrongs_v1",
+      settings: "pro_exam_drill_settings_v1"
+    };
+    const PROBLEMS = [
+      {id:1, hand:"2233334445566", answer:"12457", status:"確認済み"},
+      {id:2, hand:"3444456667889", answer:"78", status:"確認済み"},
+      {id:3, hand:"1222333444567", answer:"12347", status:"確認済み"},
+      {id:4, hand:"2233345666777", answer:"236", status:"確認済み"},
+      {id:5, hand:"4444555666678", answer:"3579", status:"確認済み"},
+      {id:6, hand:"2222334456677", answer:"5678", status:"確認済み"},
+      {id:7, hand:"3455666677778", answer:"24589", status:"確認済み"},
+      {id:8, hand:"2234455566678", answer:"347", status:"確認済み"},
+      {id:9, hand:"2223344445678", answer:"123569", status:"確認済み"},
+      {id:10, hand:"2223456777789", answer:"12345689", status:"確認済み"},
+      {id:11, hand:"2233344456678", answer:"234679", status:"確認済み"},
+      {id:12, hand:"2333455556777", answer:"12347", status:"確認済み"},
+      {id:13, hand:"1112333456777", answer:"12347", status:"要確認"},
+      {id:14, hand:"2233345567788", answer:"X", status:"確認済み"},
+      {id:15, hand:"4555566777789", answer:"34689", status:"確認済み"},
+      {id:16, hand:"2333344445567", answer:"12568", status:"確認済み"},
+      {id:17, hand:"3334555567778", answer:"36789", status:"確認済み"},
+      {id:18, hand:"2333455677788", answer:"X", status:"確認済み"},
+      {id:19, hand:"1223444566667", answer:"23", status:"確認済み"},
+      {id:20, hand:"1233334455556", answer:"12467", status:"確認済み"},
+      {id:21, hand:"3456667778889", answer:"36789", status:"確認済み"},
+      {id:22, hand:"2344566677788", answer:"134678", status:"確認済み"},
+      {id:23, hand:"2344445556666", answer:"1357", status:"確認済み"},
+      {id:24, hand:"4455666777788", answer:"35689", status:"確認済み"},
+      {id:25, hand:"1233334567888", answer:"12456789", status:"確認済み"},
+      {id:26, hand:"3334445677788", answer:"478", status:"確認済み"},
+      {id:27, hand:"3344566778888", answer:"2345", status:"確認済み"},
+      {id:28, hand:"2345666677888", answer:"145789", status:"確認済み"},
+      {id:29, hand:"3334567778999", answer:"36789", status:"確認済み"},
+      {id:30, hand:"2344455566788", answer:"367", status:"確認済み"},
+      {id:31, hand:"3455566678888", answer:"2569", status:"確認済み"},
+      {id:32, hand:"3344555667788", answer:"23458", status:"確認済み"},
+      {id:33, hand:"3444555666777", answer:"234568", status:"確認済み"},
+      {id:34, hand:"2345667778888", answer:"14679", status:"確認済み"},
+      {id:35, hand:"2345666778889", answer:"68", status:"確認済み"},
+      {id:36, hand:"4445556678999", answer:"345679", status:"確認済み"},
+      {id:37, hand:"2344445566678", answer:"15679", status:"確認済み"},
+      {id:38, hand:"2233334444556", answer:"267", status:"確認済み"},
+      {id:39, hand:"2333344555566", answer:"1467", status:"確認済み"},
+      {id:40, hand:"2344556678999", answer:"124578", status:"確認済み"},
+      {id:41, hand:"4444556667888", answer:"35678", status:"確認済み"},
+      {id:42, hand:"2223334567778", answer:"36789", status:"確認済み"},
+      {id:43, hand:"1122233346789", answer:"569", status:"確認済み"},
+      {id:44, hand:"3444455666678", answer:"235789", status:"確認済み"},
+      {id:45, hand:"4556666777788", answer:"348", status:"確認済み"},
+      {id:46, hand:"4455556677778", answer:"3469", status:"確認済み"},
+      {id:47, hand:"1112344556678", answer:"235689", status:"確認済み"},
+      {id:48, hand:"3334556677778", answer:"345689", status:"確認済み"},
+      {id:49, hand:"2333456777888", answer:"12347", status:"確認済み"},
+      {id:50, hand:"1234677788899", answer:"145", status:"OK"},
+      {id:51, hand:"2344445566667", answer:"123578", status:"確認済み"},
+      {id:52, hand:"2344455666678", answer:"13459", status:"確認済み"},
+      {id:53, hand:"2333456666788", answer:"38", status:"OK"},
+      {id:54, hand:"1112344555666", answer:"134567", status:"OK"},
+      {id:55, hand:"1222334445678", answer:"24", status:"OK"},
+      {id:56, hand:"2222333445678", answer:"13469", status:"確認済み"},
+      {id:57, hand:"3334445556667", answer:"245678", status:"確認済み"},
+      {id:58, hand:"2222344455567", answer:"1458", status:"OK"},
+      {id:59, hand:"2333445677789", answer:"37", status:"OK"},
+      {id:60, hand:"3334445556789", answer:"345679", status:"確認済み"},
+      {id:61, hand:"1122333456678", answer:"12369", status:"確認済み"},
+      {id:62, hand:"2344567788999", answer:"36789", status:"確認済み"},
+      {id:63, hand:"4566667778888", answer:"3579", status:"確認済み"},
+      {id:64, hand:"2345556677789", answer:"25678", status:"確認済み"},
+      {id:65, hand:"1223455566777", answer:"3", status:"確認済み"},
+      {id:66, hand:"1234455566788", answer:"367", status:"確認済み"},
+      {id:67, hand:"4445556677888", answer:"35678", status:"確認済み"},
+      {id:68, hand:"3344556667788", answer:"36789", status:"確認済み"},
+      {id:69, hand:"2234566677788", answer:"258", status:"確認済み"},
+      {id:70, hand:"2223334566778", answer:"234578", status:"確認済み"},
+      {id:71, hand:"3344567788889", answer:"2345", status:"確認済み"},
+      {id:72, hand:"3455556677778", answer:"234689", status:"確認済み"},
+      {id:73, hand:"2344566667888", answer:"1345789", status:"確認済み"},
+      {id:74, hand:"2233344456788", answer:"258", status:"確認済み"},
+      {id:75, hand:"1112233456678", answer:"12347", status:"確認済み"},
+      {id:76, hand:"1222233456677", answer:"5678", status:"確認済み"},
+      {id:77, hand:"1234555666777", answer:"134567", status:"確認済み"},
+      {id:78, hand:"2223444456678", answer:"1235679", status:"確認済み"},
+      {id:79, hand:"2233444556677", answer:"12347", status:"OK"},
+      {id:80, hand:"3334455567889", answer:"7", status:"OK"},
+      {id:81, hand:"2223344555666", answer:"23457", status:"確認済み"},
+      {id:82, hand:"1233344555678", answer:"23458", status:"確認済み"},
+      {id:83, hand:"1233345667778", answer:"37", status:"確認済み"},
+      {id:84, hand:"2333344555567", answer:"124678", status:"確認済み"},
+      {id:85, hand:"2344567778899", answer:"14789", status:"確認済み"},
+      {id:86, hand:"2334456777888", answer:"235678", status:"確認済み"},
+      {id:87, hand:"2222333444456", answer:"1357", status:"確認済み"},
+      {id:88, hand:"2334555567778", answer:"14", status:"確認済み"},
+      {id:89, hand:"3333455566777", answer:"24567", status:"確認済み"},
+      {id:90, hand:"2223334555667", answer:"4578", status:"確認済み"},
+      {id:91, hand:"3333445555666", answer:"246", status:"確認済み"},
+      {id:92, hand:"2233334445555", answer:"1246", status:"確認済み"},
+      {id:93, hand:"2223444556677", answer:"1234578", status:"確認済み"},
+      {id:94, hand:"2333344556777", answer:"124567", status:"確認済み"},
+      {id:95, hand:"2234444556678", answer:"27", status:"確認済み"},
+      {id:96, hand:"3333445556778", answer:"69", status:"確認済み"},
+      {id:97, hand:"2333344566678", answer:"69", status:"確認済み"},
+      {id:98, hand:"2223444456667", answer:"25678", status:"確認済み"},
+      {id:99, hand:"2234444567778", answer:"27", status:"確認済み"},
+      {id:100, hand:"2233445556677", answer:"25678", status:"確認済み"},
+      {id:101, hand:"2233334555666", answer:"1245", status:"確認済み"},
+      {id:102, hand:"1234445677789", answer:"47", status:"OK"},
+      {id:103, hand:"1111223333445", answer:"256", status:"確認済み"},
+      {id:104, hand:"2223444566778", answer:"123458", status:"確認済み"},
+      {id:105, hand:"2234455566678", answer:"347", status:"確認済み"},
+      {id:106, hand:"3334556777788", answer:"368", status:"OK"},
+      {id:107, hand:"2234445666678", answer:"234", status:"確認済み"},
+      {id:108, hand:"2333445556789", answer:"35", status:"確認済み"},
+      {id:109, hand:"2344445678999", answer:"12356789", status:"確認済み"},
+      {id:110, hand:"2333344456678", answer:"12457", status:"確認済み"},
+      {id:111, hand:"4455566677788", answer:"4578", status:"確認済み"},
+      {id:112, hand:"2333344445678", answer:"125689", status:"確認済み"},
+      {id:113, hand:"2233334445567", answer:"246", status:"確認済み"},
+      {id:114, hand:"2222333344445", answer:"156", status:"確認済み"},
+      {id:115, hand:"1233444455678", answer:"235689", status:"確認済み"},
+      {id:116, hand:"2233444555678", answer:"123469", status:"確認済み"},
+      {id:117, hand:"2334566677788", answer:"134", status:"確認済み"},
+      {id:118, hand:"4556677778899", answer:"489", status:"確認済み"},
+      {id:119, hand:"2333344556789", answer:"12457", status:"確認済み"},
+      {id:120, hand:"2223445556666", answer:"2457", status:"確認済み"},
+      {id:121, hand:"1223334455556", answer:"13467", status:"確認済み"},
+      {id:122, hand:"3334555666777", answer:"2345678", status:"確認済み"},
+      {id:123, hand:"2333444555667", answer:"36", status:"確認済み"},
+      {id:124, hand:"2233456677778", answer:"1234", status:"確認済み"},
+      {id:125, hand:"1234444555567", answer:"1367", status:"確認済み"},
+      {id:126, hand:"2333444556677", answer:"123467", status:"確認済み"},
+      {id:127, hand:"2333345666778", answer:"69", status:"確認済み"},
+      {id:128, hand:"4555667777888", answer:"3568", status:"確認済み"},
+      {id:129, hand:"2223445666788", answer:"7", status:"確認済み"},
+      {id:130, hand:"4444555566667", answer:"378", status:"確認済み"},
+      {id:131, hand:"2333344567888", answer:"12456789", status:"OK"},
+      {id:132, hand:"1123344455678", answer:"2369", status:"OK"},
+      {id:133, hand:"2233344456778", answer:"679", status:"確認済み"},
+      {id:134, hand:"1112345566677", answer:"5678", status:"確認済み"},
+      {id:135, hand:"2334455678888", answer:"25", status:"確認済み"},
+      {id:136, hand:"2223344556677", answer:"2345678", status:"確認済み"},
+      {id:137, hand:"1112346667788", answer:"56789", status:"確認済み"},
+      {id:138, hand:"3445556667778", answer:"47", status:"確認済み"},
+      {id:139, hand:"2223345567888", answer:"1346", status:"確認済み"},
+      {id:140, hand:"2334445556666", answer:"12457", status:"確認済み"},
+      {id:141, hand:"3344455566677", answer:"3467", status:"確認済み"},
+      {id:142, hand:"4445556777788", answer:"5689", status:"確認済み"},
+      {id:143, hand:"1112345678899", answer:"789", status:"確認済み"},
+      {id:144, hand:"22334445566中中", answer:"147", status:"OK"},
+      {id:145, hand:"34455678999中中", answer:"369中", status:"OK"},
+      {id:146, hand:"3344445678中中中", answer:"23569", status:"OK"},
+      {id:147, hand:"2223444556中中中", answer:"3467", status:"OK"},
+      {id:148, hand:"3334555677中中中", answer:"567", status:"OK"},
+      {id:149, hand:"1222233455667", answer:"13467", status:"確認済み"},
+      {id:150, hand:"3344556667789", answer:"2578", status:"確認済み"},
+      {id:151, hand:"2344566777788", answer:"35689", status:"確認済み"},
+      {id:152, hand:"1223344455556", answer:"13467", status:"確認済み"},
+      {id:153, hand:"23456788889中中", answer:"147", status:"OK"},
+      {id:154, hand:"22333445555中中", answer:"14", status:"OK"},
+      {id:155, hand:"3455678999中中中", answer:"24578", status:"OK"},
+      {id:156, hand:"3334556777中中中", answer:"34567", status:"OK"},
+      {id:157, hand:"3334445566中中中", answer:"24567", status:"OK"},
+      {id:158, hand:"1112334566778", answer:"2358", status:"OK"},
+      {id:159, hand:"1112233456789", answer:"12347", status:"確認済み"},
+      {id:160, hand:"2344455678999", answer:"13456", status:"確認済み"},
+      {id:161, hand:"1233444456788", answer:"258", status:"確認済み"},
+      {id:162, hand:"1234555677778", answer:"13469", status:"確認済み"},
+      {id:163, hand:"2334445556678", answer:"258", status:"確認済み"},
+      {id:164, hand:"3456677788889", answer:"2567", status:"確認済み"},
+      {id:165, hand:"2222333345678", answer:"1458", status:"確認済み"}
+    ];
+
+    const app = document.getElementById("app");
+    const state = {
+      screen: "menu",
+      tab: "challenge",
+      deck: [],
+      index: 0,
+      selected: new Set(),
+      startedAt: 0,
+      elapsed: 0,
+      timerId: null,
+      correct: 0,
+      misses: 0,
+      wrongs: [],
+      judge: null,
+      result: null,
+      search: ""
+    };
+
+    function loadJson(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
+    }
+    function saveJson(key, value) {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+    function settings() {
+      return { sound: 1, ...loadJson(STORAGE.settings, {}) };
+    }
+    function favorites() {
+      return loadJson(STORAGE.favorites, []);
+    }
+    function wrongStore() {
+      return loadJson(STORAGE.wrongs, []);
+    }
+    function setFavorites(ids) {
+      saveJson(STORAGE.favorites, [...new Set(ids)].slice(0, 300));
+    }
+    function setWrongs(ids) {
+      saveJson(STORAGE.wrongs, [...new Set(ids)].slice(0, 300));
+    }
+    function problemById(id) {
+      return PROBLEMS.find(p => p.id === Number(id));
+    }
+    function shuffle(items) {
+      const a = [...items];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+    function chars(text) {
+      return Array.from(String(text));
+    }
+    function mirrorChar(ch) {
+      return /^[1-9]$/.test(ch) ? String(10 - Number(ch)) : ch;
+    }
+    function normalizeAnswer(answer) {
+      return chars(answer).sort((a, b) => orderValue(a) - orderValue(b)).join("");
+    }
+    function orderValue(ch) {
+      if (ch === "X") return 0;
+      if (ch === "中") return 10;
+      return Number(ch);
+    }
+    function materialize(problem) {
+      const mirrored = Math.random() < 0.5;
+      const hand = mirrored ? chars(problem.hand).map(mirrorChar).sort((a, b) => orderValue(a) - orderValue(b)).join("") : problem.hand;
+      const answer = mirrored ? normalizeAnswer(chars(problem.answer).map(mirrorChar).join("")) : normalizeAnswer(problem.answer);
+      return { ...problem, displayHand: hand, displayAnswer: answer, mirrored };
+    }
+    function tileSrc(ch) {
+      if (ch === "中") return "tiles/ji7-66-90-l.png";
+      return `tiles/sou${ch}-66-90-l.png`;
+    }
+    function labelAnswer(answer) {
+      return chars(answer).map(ch => ch === "X" ? "なし" : ch === "中" ? "中" : `${ch}s`).join(" / ");
+    }
+    function formatTime(seconds) {
+      const s = Math.max(0, Math.floor(seconds));
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+    }
+    function playBeep(ok) {
+      if (!settings().sound) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = ok ? "triangle" : "sawtooth";
+        osc.frequency.value = ok ? 720 : 170;
+        gain.gain.setValueAtTime(0.001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(ok ? 0.035 : 0.045, ctx.currentTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.13);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.14);
+      } catch {}
+    }
+    function startRun(count, sourceIds = null) {
+      const source = sourceIds ? sourceIds.map(problemById).filter(Boolean) : PROBLEMS;
+      const selected = shuffle(source).slice(0, Math.min(count, source.length)).map(materialize);
+      state.screen = "play";
+      state.deck = selected;
+      state.index = 0;
+      state.selected = new Set();
+      state.startedAt = performance.now();
+      state.elapsed = 0;
+      state.correct = 0;
+      state.misses = 0;
+      state.wrongs = [];
+      state.judge = null;
+      state.result = null;
+      document.body.classList.add("playing");
+      window.scrollTo(0, 0);
+      clearInterval(state.timerId);
+      state.timerId = setInterval(() => {
+        state.elapsed = (performance.now() - state.startedAt) / 1000;
+        if (state.deck.length === 50 && state.elapsed >= EXAM_LIMIT_SECONDS) finishRun(true);
+        else render();
+      }, 250);
+      preloadTiles(selected[0]);
+      preloadTiles(selected[1]);
+      render();
+    }
+    function preloadTiles(problem) {
+      if (!problem) return;
+      chars(problem.displayHand || problem.hand).forEach(ch => {
+        const img = new Image();
+        img.src = tileSrc(ch);
+      });
+    }
+    function toggleSelect(value) {
+      if (state.selected.has(value)) state.selected.delete(value);
+      else {
+        if (value === "X") state.selected = new Set(["X"]);
+        else {
+          state.selected.delete("X");
+          state.selected.add(value);
+        }
+      }
+      render();
+    }
+    function confirmAnswer() {
+      const p = state.deck[state.index];
+      const selected = normalizeAnswer([...state.selected].join(""));
+      const ok = selected === p.displayAnswer;
+      if (ok) state.correct += 1;
+      else {
+        state.misses += 1;
+        state.wrongs.push({ id: p.id, hand: p.displayHand, selected, answer: p.displayAnswer, mirrored: p.mirrored });
+        setWrongs([p.id, ...wrongStore()]);
+      }
+      playBeep(ok);
+      state.judge = ok ? "ok" : "ng";
+      render();
+      setTimeout(() => {
+        state.index += 1;
+        state.selected = new Set();
+        state.judge = null;
+        preloadTiles(state.deck[state.index + 1]);
+        if (state.index >= state.deck.length) finishRun(false);
+        else render();
+      }, 260);
+    }
+    function finishRun(timeout) {
+      clearInterval(state.timerId);
+      state.elapsed = Math.min((performance.now() - state.startedAt) / 1000, EXAM_LIMIT_SECONDS);
+      state.result = {
+        total: state.deck.length,
+        correct: state.correct,
+        misses: state.misses,
+        elapsed: state.elapsed,
+        timeout,
+        wrongs: [...state.wrongs]
+      };
+      state.screen = "result";
+      document.body.classList.remove("playing");
+      render();
+    }
+    function endToMenu() {
+      clearInterval(state.timerId);
+      document.body.classList.remove("playing");
+      state.screen = "menu";
+      state.tab = "challenge";
+      render();
+    }
+    function toggleFavorite(id) {
+      const favs = favorites();
+      if (favs.includes(id)) setFavorites(favs.filter(x => x !== id));
+      else setFavorites([id, ...favs]);
+      render();
+    }
+    function removeWrong(id) {
+      setWrongs(wrongStore().filter(x => x !== id));
+      render();
+    }
+    function renderTiles(text, mini = false) {
+      return `<div class="${mini ? "mini-tiles" : "tiles"}">${chars(text).map(ch => `<img class="tile" src="${tileSrc(ch)}" alt="${ch}">`).join("")}</div>`;
+    }
+    function renderTabs() {
+      const tabs = [
+        ["challenge", "挑戦"],
+        ["review", "復習"],
+        ["list", "問題一覧"],
+        ["settings", "設定"]
+      ];
+      return `<div class="tabs">${tabs.map(([key, label]) => `<button class="tab ${state.tab === key ? "active" : ""}" data-tab="${key}">${label}</button>`).join("")}</div>`;
+    }
+    function renderMenu() {
+      document.body.classList.remove("playing");
+      app.className = "app";
+      const favCount = favorites().length;
+      const wrongCount = wrongStore().length;
+      app.innerHTML = `
+        <div class="header">
+          <div>
+            <h1>${APP_TITLE}</h1>
+            <p class="sub">13枚形の索子清一色対策。左右反転あり。</p>
+          </div>
+        </div>
+        ${renderTabs()}
+        <section class="panel card">${renderTabBody(favCount, wrongCount)}</section>
+      `;
+      app.querySelectorAll("[data-tab]").forEach(btn => btn.addEventListener("click", () => {
+        state.tab = btn.dataset.tab;
+        render();
+      }));
+      bindMenuEvents();
+      if (state.tab === "review") renderReview("wrong");
+    }
+    function renderTabBody(favCount, wrongCount) {
+      if (state.tab === "challenge") return `
+        <div class="section-title"><h2>挑戦</h2><span class="meta">全${PROBLEMS.length}問</span></div>
+        <div class="mode-grid">
+          <div class="mode-card">
+            <div><h2>10問</h2><small>ウォームアップ用。ランダム出題。</small></div>
+            <button class="btn btn-primary" data-start="10">開始</button>
+          </div>
+          <div class="mode-card">
+            <div><h2>50問</h2><small>本番想定。25分制限。</small></div>
+            <button class="btn btn-primary" data-start="50">開始</button>
+          </div>
+        </div>
+      `;
+      if (state.tab === "review") return `
+        <div class="section-title"><h2>復習</h2></div>
+        <div class="tabs" style="grid-template-columns:1fr 1fr;margin-top:0">
+          <button class="tab active" data-review-kind="wrong">誤答 ${wrongCount}問</button>
+          <button class="tab" data-review-kind="fav">⭐お気に入り ${favCount}問</button>
+        </div>
+        <div id="reviewBox"></div>
+      `;
+      if (state.tab === "list") return `
+        <div class="section-title"><h2>問題一覧</h2><span class="meta">${PROBLEMS.length}問</span></div>
+        <input class="search" id="search" value="${escapeHtml(state.search)}" placeholder="番号・牌姿・待ちで検索">
+        <div class="list">${renderProblemRows(PROBLEMS.filter(p => {
+          const q = state.search.trim();
+          return !q || String(p.id).includes(q) || p.hand.includes(q) || p.answer.includes(q);
+        }))}</div>
+      `;
+      return `
+        <div class="section-title"><h2>設定</h2></div>
+        <div class="row">
+          <div>
+            <strong>効果音</strong>
+            <p class="meta">正誤判定の音を鳴らします。</p>
+          </div>
+          <button class="btn ${settings().sound ? "btn-primary" : ""}" data-sound>${settings().sound ? "ON" : "OFF"}</button>
+        </div>
+      `;
+    }
+    function renderReview(kind = "wrong") {
+      const ids = kind === "wrong" ? wrongStore() : favorites();
+      const title = kind === "wrong" ? "誤答" : "お気に入り";
+      const empty = kind === "wrong" ? "誤答履歴はまだありません。" : "お気に入りはまだありません。";
+      const box = document.getElementById("reviewBox");
+      if (!box) return;
+      if (!ids.length) {
+        box.innerHTML = `<p class="empty">${empty}</p>`;
+        return;
+      }
+      box.innerHTML = `
+        <div class="play-actions">
+          <button class="btn btn-primary" data-practice="${kind}">まとめて練習</button>
+          <button class="btn btn-danger" data-clear="${kind}">空にする</button>
+        </div>
+        <div class="list">${renderProblemRows(ids.map(problemById).filter(Boolean), kind)}</div>
+      `;
+      bindReviewEvents();
+    }
+    function renderProblemRows(items, mode = "list") {
+      const favs = favorites();
+      return items.map(p => `
+        <div class="row">
+          <div>
+            ${renderTiles(p.hand, true)}
+            <div class="meta">No.${p.id} / 正解 ${labelAnswer(normalizeAnswer(p.answer))}${p.status !== "確認済み" ? ` / ${p.status}` : ""}</div>
+          </div>
+          <div style="display:grid;gap:6px">
+            <button class="star ${favs.includes(p.id) ? "on" : ""}" data-fav="${p.id}">${favs.includes(p.id) ? "★済" : "☆追加"}</button>
+            ${mode === "wrong" ? `<button class="star" data-remove-wrong="${p.id}">削除</button>` : ""}
+          </div>
+        </div>
+      `).join("") || `<p class="empty">該当する問題はありません。</p>`;
+    }
+    function bindMenuEvents() {
+      app.querySelectorAll("[data-start]").forEach(btn => btn.addEventListener("click", () => startRun(Number(btn.dataset.start))));
+      app.querySelectorAll("[data-fav]").forEach(btn => btn.addEventListener("click", () => toggleFavorite(Number(btn.dataset.fav))));
+      app.querySelectorAll("[data-remove-wrong]").forEach(btn => btn.addEventListener("click", () => removeWrong(Number(btn.dataset.removeWrong))));
+      app.querySelectorAll("[data-review-kind]").forEach(btn => btn.addEventListener("click", () => {
+        app.querySelectorAll("[data-review-kind]").forEach(b => b.classList.toggle("active", b === btn));
+        renderReview(btn.dataset.reviewKind);
+      }));
+      const search = document.getElementById("search");
+      if (search) search.addEventListener("input", e => {
+        state.search = e.target.value;
+        render();
+        const next = document.getElementById("search");
+        next.focus();
+        next.setSelectionRange(next.value.length, next.value.length);
+      });
+      const sound = app.querySelector("[data-sound]");
+      if (sound) sound.addEventListener("click", () => {
+        const next = { ...settings(), sound: settings().sound ? 0 : 1 };
+        saveJson(STORAGE.settings, next);
+        render();
+      });
+    }
+    function bindReviewEvents() {
+      app.querySelectorAll("[data-fav]").forEach(btn => btn.addEventListener("click", () => toggleFavorite(Number(btn.dataset.fav))));
+      app.querySelectorAll("[data-remove-wrong]").forEach(btn => btn.addEventListener("click", () => removeWrong(Number(btn.dataset.removeWrong))));
+      app.querySelectorAll("[data-practice]").forEach(btn => btn.addEventListener("click", () => {
+        const ids = btn.dataset.practice === "wrong" ? wrongStore() : favorites();
+        startRun(ids.length, ids);
+      }));
+      app.querySelectorAll("[data-clear]").forEach(btn => btn.addEventListener("click", () => {
+        if (btn.dataset.clear === "wrong") setWrongs([]);
+        else setFavorites([]);
+        render();
+      }));
+    }
+    function renderPlay() {
+      const p = state.deck[state.index];
+      if (!p) return finishRun(false);
+      app.className = "app play-shell";
+      const pct = Math.round((state.index / state.deck.length) * 100);
+      const answerKeys = ["1","2","3","4","5","6","7","8","9","中","X"];
+      app.innerHTML = `
+        <div class="topline">
+          <div class="progress-text">${state.index + 1}/${state.deck.length}</div>
+          <div class="timer">${formatTime(state.elapsed)}${state.deck.length === 50 ? `<span class="limit">制限 ${formatTime(EXAM_LIMIT_SECONDS)}</span>` : ""}</div>
+          <div class="bar"><span style="width:${pct}%"></span></div>
+        </div>
+        <section class="panel question">
+          <h2 class="question-title">何待ち？</h2>
+          ${renderTiles(p.displayHand)}
+          <div class="answer-wrap">
+            <div class="judge ${state.judge ? "show " + state.judge : ""}">${state.judge === "ok" ? "○" : state.judge === "ng" ? "×" : ""}</div>
+            <div>
+              <div class="keys">
+                ${answerKeys.map(k => `<button class="key ${state.selected.has(k) ? "selected" : ""} ${k === "X" || k === "中" ? "wide" : ""}" data-key="${k}">${k === "X" ? "なし" : k}</button>`).join("")}
+              </div>
+              <button class="btn btn-primary confirm" data-confirm>確定</button>
+            </div>
+          </div>
+        </section>
+        <div class="play-actions">
+          <button class="btn" data-menu>メニュー</button>
+          <button class="btn" data-retry>再挑戦</button>
+        </div>
+      `;
+      app.querySelectorAll("[data-key]").forEach(btn => btn.addEventListener("click", () => toggleSelect(btn.dataset.key)));
+      app.querySelector("[data-confirm]").addEventListener("click", confirmAnswer);
+      app.querySelector("[data-menu]").addEventListener("click", endToMenu);
+      app.querySelector("[data-retry]").addEventListener("click", () => startRun(state.deck.length));
+    }
+    function renderResult() {
+      const r = state.result;
+      app.className = "app";
+      const avg = r.total ? (r.elapsed / r.total).toFixed(1) : "0.0";
+      app.innerHTML = `
+        <div class="header">
+          <div><h1 class="result-title">${r.timeout ? "時間切れ" : "成績発表"}</h1></div>
+          <button class="btn" data-menu>メニュー</button>
+        </div>
+        <section class="panel card">
+          <div class="summary">
+            <div class="stat"><small>正解</small><strong>${r.correct}</strong></div>
+            <div class="stat"><small>ミス</small><strong>${r.misses}</strong></div>
+            <div class="stat"><small>時間</small><strong>${formatTime(r.elapsed)}</strong></div>
+            <div class="stat"><small>1問平均</small><strong>${avg}秒</strong></div>
+          </div>
+          <div class="play-actions">
+            <button class="btn btn-brown" data-menu>メニュー</button>
+            <button class="btn btn-primary" data-retry-result>もう一度</button>
+          </div>
+        </section>
+        <section class="panel card" style="margin-top:14px">
+          <div class="section-title"><h2>誤答問題</h2><span class="meta">${r.wrongs.length}問</span></div>
+          <div class="list">${r.wrongs.map(w => {
+            const p = problemById(w.id);
+            return `<div class="row">
+              <div>
+                ${renderTiles(w.hand || p.hand, true)}
+                <div class="meta">No.${p.id} / 正解 ${labelAnswer(w.answer)} / 選択 ${labelAnswer(w.selected || "X")}</div>
+              </div>
+              <button class="star ${favorites().includes(p.id) ? "on" : ""}" data-fav="${p.id}">${favorites().includes(p.id) ? "★済" : "☆追加"}</button>
+            </div>`;
+          }).join("") || `<p class="empty">誤答はありません。</p>`}</div>
+        </section>
+      `;
+      app.querySelectorAll("[data-menu]").forEach(btn => btn.addEventListener("click", endToMenu));
+      app.querySelector("[data-retry-result]").addEventListener("click", () => startRun(r.total));
+      app.querySelectorAll("[data-fav]").forEach(btn => btn.addEventListener("click", () => toggleFavorite(Number(btn.dataset.fav))));
+    }
+    function escapeHtml(text) {
+      return String(text).replace(/[&<>"']/g, ch => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;" }[ch]));
+    }
+    function render() {
+      if (state.screen === "play") return renderPlay();
+      if (state.screen === "result") return renderResult();
+      renderMenu();
+    }
+    window.addEventListener("keydown", e => {
+      if (state.screen === "play") {
+        if (/^[1-9]$/.test(e.key)) toggleSelect(e.key);
+        if (e.key === "Enter") confirmAnswer();
+        if (e.key.toLowerCase() === "x") toggleSelect("X");
+      } else if (state.screen === "result" && e.key === "Enter") {
+        startRun(state.result.total);
+      }
+    });
+    window.addEventListener("touchmove", e => {
+      if (document.body.classList.contains("playing")) e.preventDefault();
+    }, { passive: false });
+    render();
+  </script>
+</body>
+</html>
