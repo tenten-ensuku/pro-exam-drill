@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>プロ試験対策ドリル ver3</title>
+  <title>プロ試験対策ドリル ver4</title>
   <meta name="description" content="13枚形の索子清一色対策ドリル。" />
   <link rel="icon" href="data:," />
   <style>
@@ -468,7 +468,7 @@
 <body>
   <main class="app" id="app"></main>
   <script>
-    const APP_VERSION = 3;
+    const APP_VERSION = 4;
     const APP_TITLE = "プロ試験対策ドリル";
     const EXAM_LIMIT_SECONDS = 25 * 60;
     const STORAGE = {
@@ -665,6 +665,7 @@
       judge: null,
       answerReview: null,
       touchDragKey: null,
+      lastTouchAt: 0,
       result: null,
       search: "",
       listSort: "normal"
@@ -797,6 +798,7 @@
       state.judge = null;
       state.answerReview = null;
       state.touchDragKey = null;
+      state.lastTouchAt = 0;
       state.result = null;
       document.body.classList.add("playing");
       window.scrollTo(0, 0);
@@ -841,6 +843,22 @@
       }
       updateKeySelection();
     }
+    function pressAnswerKey(value, event, source = "pointer") {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      if (source === "pointer" && performance.now() - state.lastTouchAt < 500) return;
+      state.touchDragKey = value;
+      toggleSelect(value);
+    }
+    function keyFromTouch(event) {
+      const touch = event.touches && event.touches[0];
+      if (!touch) return null;
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      const key = el && el.closest ? el.closest("[data-key]") : null;
+      return key ? key.dataset.key : null;
+    }
     function confirmAnswer() {
       if (state.answerReview) return;
       const p = state.deck[state.index];
@@ -876,6 +894,7 @@
       state.judge = null;
       state.answerReview = null;
       state.touchDragKey = null;
+      state.lastTouchAt = 0;
       state.elapsed = currentElapsed();
       preloadTiles(state.deck[state.index + 1]);
       if (state.index >= state.deck.length) finishRun(false);
@@ -1206,14 +1225,25 @@
       `;
       app.querySelectorAll("[data-key]").forEach(btn => {
         btn.addEventListener("pointerdown", event => {
-          event.preventDefault();
-          state.touchDragKey = btn.dataset.key;
-          toggleSelect(btn.dataset.key);
+          pressAnswerKey(btn.dataset.key, event, "pointer");
+        });
+        btn.addEventListener("touchstart", event => {
+          state.lastTouchAt = performance.now();
+          pressAnswerKey(btn.dataset.key, event, "touch");
+        }, { passive: false });
+        btn.addEventListener("touchmove", event => {
+          if (!settings().slideTouch) return;
+          const key = keyFromTouch(event);
+          if (!key || key === state.touchDragKey) return;
+          state.lastTouchAt = performance.now();
+          pressAnswerKey(key, event, "touch");
+        }, { passive: false });
+        btn.addEventListener("touchend", () => {
+          state.touchDragKey = null;
         });
         btn.addEventListener("pointerenter", event => {
           if (!settings().slideTouch || event.buttons !== 1 || state.touchDragKey === btn.dataset.key) return;
-          state.touchDragKey = btn.dataset.key;
-          toggleSelect(btn.dataset.key);
+          pressAnswerKey(btn.dataset.key, event, "pointer");
         });
       });
       app.querySelector("[data-confirm]").addEventListener("click", confirmAnswer);
