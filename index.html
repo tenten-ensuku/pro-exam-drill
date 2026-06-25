@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>プロ試験対策ドリル ver2</title>
+  <title>プロ試験対策ドリル ver3</title>
   <meta name="description" content="13枚形の索子清一色対策ドリル。" />
   <link rel="icon" href="data:," />
   <style>
@@ -468,7 +468,7 @@
 <body>
   <main class="app" id="app"></main>
   <script>
-    const APP_VERSION = 2;
+    const APP_VERSION = 3;
     const APP_TITLE = "プロ試験対策ドリル";
     const EXAM_LIMIT_SECONDS = 25 * 60;
     const STORAGE = {
@@ -665,7 +665,6 @@
       judge: null,
       answerReview: null,
       touchDragKey: null,
-      suppressClickKey: null,
       result: null,
       search: "",
       listSort: "normal"
@@ -798,7 +797,6 @@
       state.judge = null;
       state.answerReview = null;
       state.touchDragKey = null;
-      state.suppressClickKey = null;
       state.result = null;
       document.body.classList.add("playing");
       window.scrollTo(0, 0);
@@ -878,7 +876,6 @@
       state.judge = null;
       state.answerReview = null;
       state.touchDragKey = null;
-      state.suppressClickKey = null;
       state.elapsed = currentElapsed();
       preloadTiles(state.deck[state.index + 1]);
       if (state.index >= state.deck.length) finishRun(false);
@@ -1208,19 +1205,10 @@
         </div>
       `;
       app.querySelectorAll("[data-key]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          if (state.suppressClickKey === btn.dataset.key) {
-            state.suppressClickKey = null;
-            return;
-          }
-          toggleSelect(btn.dataset.key);
-        });
-        btn.addEventListener("pointerdown", () => {
+        btn.addEventListener("pointerdown", event => {
+          event.preventDefault();
           state.touchDragKey = btn.dataset.key;
-          if (settings().slideTouch) {
-            state.suppressClickKey = btn.dataset.key;
-            toggleSelect(btn.dataset.key);
-          }
+          toggleSelect(btn.dataset.key);
         });
         btn.addEventListener("pointerenter", event => {
           if (!settings().slideTouch || event.buttons !== 1 || state.touchDragKey === btn.dataset.key) return;
